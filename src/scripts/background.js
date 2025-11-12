@@ -29,7 +29,8 @@ let storage = {
     block_feedback: false,
     disable_db_normalize: false,
     disable_you_there: false,
-    disable_on_history: false
+    disable_on_history: false,
+    disable_on_subscriptions: false
   },
 };
 

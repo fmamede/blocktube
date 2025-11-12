@@ -496,6 +496,7 @@
     const friendlyVideoObj = {};
 
     if (document.location.pathname === '/feed/history' && storageData.options.disable_on_history) return false;
+    if (document.location.pathname === '/feed/subscriptions' && storageData.options.disable_on_subscriptions) return false;
 
     let doBlock = Object.keys(filters).some((h) => {
       const filterPath = filters[h];
