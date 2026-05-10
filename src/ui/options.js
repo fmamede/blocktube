@@ -1,8 +1,9 @@
 (function () {
   const has = Object.prototype.hasOwnProperty;
 
-  const defaultJSFunction = `(video, objectType) => {
+  const defaultJSFunction = `(video, objectType, currentChannel) => {
   // Add custom conditions below
+  // currentChannel is the YouTube channel handle (e.g. "@KingAkademiks") when browsing a channel page, otherwise undefined
 
   // Custom conditions did not match, do not block
   return false;

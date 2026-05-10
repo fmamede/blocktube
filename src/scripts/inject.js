@@ -107,6 +107,11 @@
   let jsFilter;
   let jsFilterEnabled = false;
 
+  function getCurrentChannel() {
+    const match = document.location.pathname.match(/^\/@([^/]+)/);
+    return match ? ('@' + match[1]) : undefined;
+  }
+
   // TODO: hack for blocking data in other objects
   let currentBlock = false;
 
@@ -571,10 +576,11 @@
 
     if (!doBlock && jsFilterEnabled) {
       // force return value into boolean just in case someone tries returning something else
+      const currentChannel = getCurrentChannel();
       try {
-        doBlock = !!jsFilter(friendlyVideoObj, objectType);
+        doBlock = !!jsFilter(friendlyVideoObj, objectType, currentChannel);
       } catch (e) {
-        console.error("Custom function exception", e, "friendlyVideoObj: ", friendlyVideoObj, "objectType: ", objectType);
+        console.error("Custom function exception", e, "friendlyVideoObj: ", friendlyVideoObj, "objectType: ", objectType, "currentChannel: ", currentChannel);
       }
     }
     if (doBlock && objectType === 'commentEntityPayload') {
