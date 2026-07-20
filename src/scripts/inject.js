@@ -1020,7 +1020,8 @@
 
   function parseViewCount(viewCount) {
     const parts = viewCount.split(" ");
-    if (parts[1] !== "views" && parts[1] !== "view") return undefined; // Fail if not english formatting
+    // Check if second part exists and is not "views"/"view" (for non-english formatting)
+    if (parts[1] !== undefined && parts[1] !== "views" && parts[1] !== "view") return undefined;
     let views = parts[0];
     
     // Handle abbreviated formats (K, M, B)
