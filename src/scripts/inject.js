@@ -112,6 +112,65 @@
     return match ? ('@' + match[1]) : undefined;
   }
 
+  // Extract badge texts (e.g. "New", "Auto-dubbed", "4K", "CC") for the JS
+  // custom filter. Works structurally: finds badge subtrees (any key matching
+  // /badge/i, e.g. rows[].badges[] with BadgeView {badgeText} for the new
+  // view-model layout, metadataBadgeRenderer, ytBadgeViewModel) and collects
+  // their text. Duration badges (thumbnail time status, e.g. "21:15" /
+  // "21 minutes, 15 seconds") are excluded.
+  const DURATION_TEXT_REGEX = /^\d{1,3}(:\d{2}){1,2}$|^\d+ (second|minute|hour|day|week|month|year)s?(, .*)?$/i;
+
+  function extractBadgeTexts(filteredObject) {
+    const badgeTexts = [];
+    const badgeKeyRegex = /badge/i;
+    const thumbnailOverlayRegex = /thumbnail/i;
+    const textKeyRegex = /^(content|text|simpleText|accessibilityText|accessibilityLabel|label|badgeText)$/;
+
+    function collectTexts(node) {
+      if (node === null || typeof node !== 'object') return;
+      if (Array.isArray(node)) {
+        node.forEach(collectTexts);
+        return;
+      }
+      Object.keys(node).forEach((k) => {
+        const v = node[k];
+        if (typeof v === 'string') {
+          if (textKeyRegex.test(k)
+               && v.length > 0 && badgeTexts.indexOf(v) === -1
+               && !DURATION_TEXT_REGEX.test(v.trim())) {
+            badgeTexts.push(v);
+          }
+        } else if (typeof v === 'object' && v !== null) {
+          collectTexts(v);
+        }
+      });
+    }
+
+    (function walk(node) {
+      if (node === null || typeof node !== 'object') return;
+      if (Array.isArray(node)) {
+        node.forEach(walk);
+        return;
+      }
+      Object.keys(node).forEach((k) => {
+        const child = node[k];
+        if (child === null || typeof child !== 'object') return;
+        if (badgeKeyRegex.test(k)) {
+          // duration badges only ever appear as thumbnail-overlay badges;
+          // skip that whole subtree so real metadata badges aren't missed
+          if (thumbnailOverlayRegex.test(k)) return;
+          collectTexts(child);
+        } else if (thumbnailOverlayRegex.test(k)) {
+          return; // skip thumbnail overlay subtree entirely (duration, progress bar)
+        } else {
+          walk(child);
+        }
+      });
+    })(filteredObject);
+
+    return badgeTexts;
+  }
+
   // TODO: hack for blocking data in other objects
   let currentBlock = false;
 
@@ -577,8 +636,12 @@
     if (!doBlock && jsFilterEnabled) {
       // force return value into boolean just in case someone tries returning something else
       const currentChannel = getCurrentChannel();
+      if (friendlyVideoObj.badges === undefined) {
+        const badgeTexts = extractBadgeTexts(obj);
+        if (badgeTexts.length > 0) friendlyVideoObj.badges = badgeTexts;
+      }
       try {
-        doBlock = !!jsFilter(friendlyVideoObj, objectType, currentChannel);
+        doBlock = !!jsFilter(friendlyVideoObj, objectType, currentChannel, friendlyVideoObj.badges);
       } catch (e) {
         console.error("Custom function exception", e, "friendlyVideoObj: ", friendlyVideoObj, "objectType: ", objectType, "currentChannel: ", currentChannel);
       }
